@@ -1,23 +1,40 @@
+"use client";
+
+import { useState } from "react";
+
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
+import UploadCard from "@/components/home/UploadCard";
+import EmptyLeads from "@/components/home/EmptyLeads";
+import UploadModal from "@/components/upload/UploadModal";
+
 export default function Home() {
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  function handleOpenUpload() {
+    setIsUploadOpen(true);
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-12">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-slate-900">
-            AI CSV Importer
-          </h1>
+    <DashboardLayout>
+      <PageHeader onUploadClick={handleOpenUpload} />
 
-          <p className="mt-3 text-slate-600">
-            Upload a CSV file and let AI extract CRM lead information.
-          </p>
+      <UploadCard onUploadClick={handleOpenUpload} />
+
+      <EmptyLeads />
+
+      {isUploadOpen && (
+        <div>
+          <UploadModal
+            open={isUploadOpen}
+            selectedFile={selectedFile}
+            onClose={() => setIsUploadOpen(false)}
+            onFileSelect={setSelectedFile}
+          />
         </div>
-
-        <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-center text-slate-500">
-            Upload component coming next...
-          </p>
-        </section>
-      </div>
-    </main>
+      )}
+    </DashboardLayout>
   );
 }
