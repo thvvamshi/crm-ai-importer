@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 
+import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { redis } from "../config/redis.js";
 import { importProcessorService } from "../services/import/import-processor.service.js";
@@ -19,6 +20,7 @@ const worker = new Worker(
   },
   {
     connection: redis,
+    prefix: env.REDIS_PREFIX,
   },
 );
 

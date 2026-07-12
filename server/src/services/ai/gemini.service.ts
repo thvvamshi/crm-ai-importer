@@ -27,7 +27,9 @@ export class GeminiService implements AIProvider {
     } catch (error) {
       console.error("Gemini API Error:", error);
 
-      throw new Error("Failed to generate AI response.");
+      throw new Error(
+        `Gemini API request failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 }
