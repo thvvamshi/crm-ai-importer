@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import { importService } from "../services/import/import.service.js";
 import { processImportService } from "../services/import/process-import.service.js";
+import { getImportService } from "../services/import/get-import.service.js";
 
 export async function createImport(req: Request, res: Response) {
   if (!req.file) {
@@ -36,6 +37,20 @@ export async function processImport(
   res.status(202).json({
     success: true,
     message: "Import has been queued for processing.",
+    data: result,
+  });
+}
+
+export async function getImport(
+  req: Request,
+  res: Response,
+) {
+  const { id } = req.params;
+
+  const result = await getImportService.execute(id);
+
+  res.status(200).json({
+    success: true,
     data: result,
   });
 }
