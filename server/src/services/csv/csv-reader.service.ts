@@ -4,7 +4,7 @@ import csv from "csv-parser";
 export type CsvRow = Record<string, string>;
 
 class CsvReaderService {
-  async read(filePath: string): Promise<CsvRow[]> {
+  async readAll(filePath: string): Promise<CsvRow[]> {
     return new Promise((resolve, reject) => {
       const rows: CsvRow[] = [];
 

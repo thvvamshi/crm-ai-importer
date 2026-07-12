@@ -14,7 +14,6 @@ export const importQueue = new Queue("crm-import", {
     },
 
     removeOnComplete: 100,
-
     removeOnFail: 100,
   },
 });
