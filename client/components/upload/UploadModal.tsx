@@ -8,6 +8,7 @@ interface UploadModalProps {
   open: boolean;
   selectedFile: File | null;
   previewRows: Record<string, string>[];
+  isProcessing: boolean;
   onClose: () => void;
   onFileSelect: (file: File) => void;
   onRemove: () => void;
@@ -18,6 +19,7 @@ export default function UploadModal({
   open,
   selectedFile,
   previewRows,
+  isProcessing,
   onClose,
   onFileSelect,
   onRemove,
@@ -43,8 +45,9 @@ export default function UploadModal({
           <button
             type="button"
             onClick={onClose}
+            disabled={isProcessing}
             aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X size={20} strokeWidth={2.5} />
           </button>
@@ -68,22 +71,23 @@ export default function UploadModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-300 bg-white py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
+            disabled={isProcessing}
+            className="flex-1 rounded-xl border border-slate-300 bg-white py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
 
           <button
             type="button"
-            disabled={!selectedFile}
+            disabled={!selectedFile || isProcessing}
             onClick={onUpload}
             className={`flex-1 rounded-xl py-3 text-base font-semibold text-white transition ${
-              selectedFile
-                ? "bg-orange-500 hover:bg-orange-600"
-                : "cursor-not-allowed bg-orange-300"
+              !selectedFile || isProcessing
+                ? "cursor-not-allowed bg-orange-300"
+                : "bg-orange-500 hover:bg-orange-600"
             }`}
           >
-            {selectedFile ? "Import Leads" : "Upload File"}
+            {isProcessing ? "Uploading..." : "Import Leads"}
           </button>
         </div>
       </div>

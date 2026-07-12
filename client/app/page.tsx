@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { parseCSV } from "@/lib/csv";
+import { uploadImport } from "@/lib/imports";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PageHeader from "@/components/layout/PageHeader";
@@ -17,6 +18,10 @@ export default function Home() {
 
   const [previewRows, setPreviewRows] = useState<Record<string, string>[]>([]);
 
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [importId, setImportId] = useState("");
+
   function handleOpenUpload() {
     setIsUploadOpen(true);
   }
@@ -26,6 +31,7 @@ export default function Home() {
 
     try {
       const rows = await parseCSV(file);
+
       setPreviewRows(rows);
     } catch (error) {
       console.error(error);
@@ -38,13 +44,28 @@ export default function Home() {
   }
 
   async function handleUpload() {
-    console.log("Uploading...");
+    if (!selectedFile) return;
 
-    console.log(selectedFile);
+    try {
+      setIsProcessing(true);
 
-    console.log(previewRows);
+      const response = await uploadImport(selectedFile);
 
-    // Backend API integration next
+      console.log(response);
+
+      setImportId(response.data.importId);
+
+      alert("CSV uploaded successfully.");
+
+      // Next step:
+      // processImport(importId)
+    } catch (error) {
+      console.error(error);
+
+      alert("Upload failed.");
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
   function handleCloseModal() {
@@ -65,6 +86,7 @@ export default function Home() {
         open={isUploadOpen}
         selectedFile={selectedFile}
         previewRows={previewRows}
+        isProcessing={isProcessing}
         onClose={handleCloseModal}
         onFileSelect={handleFileSelect}
         onRemove={handleRemoveFile}
