@@ -21,24 +21,24 @@ import {
 
 const router = Router();
 
-//  * POST /imports
+// POST /imports
 router.post("/", upload.single("file"), asyncHandler(createImport));
 
-//  * GET /imports?page=1&limit=10
+// GET /imports?page=1&limit=10
 router.get(
   "/",
   validate(listImportsQuerySchema, "query"),
   asyncHandler(listImports),
 );
 
-//  * GET /imports/:id
+//  GET /imports/:id
 router.get(
   "/:id",
   validate(importIdParamsSchema, "params"),
   asyncHandler(getImport),
 );
 
-//  * GET /imports/:id/leads?page=1&limit=10
+// GET /imports/:id/leads?page=1&limit=10
 router.get(
   "/:id/leads",
   validate(listImportLeadsParamsSchema, "params"),
@@ -46,7 +46,7 @@ router.get(
   asyncHandler(listImportLeads),
 );
 
-//  * POST /imports/:id/process
+// POST /imports/:id/process
 router.post(
   "/:id/process",
   validate(importIdParamsSchema, "params"),
