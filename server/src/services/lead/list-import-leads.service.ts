@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 import { ImportModel } from "../../models/Import.js";
 import { LeadModel } from "../../models/Lead.js";
 
@@ -8,7 +10,11 @@ interface ListImportLeadsOptions {
 }
 
 class ListImportLeadsService {
-  async execute({ importId, page, limit }: ListImportLeadsOptions) {
+  async execute({
+    importId,
+    page,
+    limit,
+  }: ListImportLeadsOptions) {
     const importRecord = await ImportModel.findById(importId);
 
     if (!importRecord) {
@@ -17,28 +23,52 @@ class ListImportLeadsService {
 
     const skip = (page - 1) * limit;
 
+    const objectId = new Types.ObjectId(importId);
+
     const [leads, total] = await Promise.all([
-      LeadModel.find({ importId })
-        .sort({ createdAt: 1 , _id: 1 })
+      LeadModel.find({
+        importId: objectId,
+      })
+        .sort({
+          createdAt: 1,
+          _id: 1,
+        })
         .skip(skip)
         .limit(limit)
         .lean(),
 
-      LeadModel.countDocuments({ importId }),
+      LeadModel.countDocuments({
+        importId: objectId,
+      }),
     ]);
 
     return {
       leads: leads.map((lead) => ({
         id: lead._id.toString(),
+
         name: lead.name,
         email: lead.email,
-        phone: lead.phone,
+
+        phone:
+          lead.countryCode && lead.mobileWithoutCountryCode
+            ? `${lead.countryCode} ${lead.mobileWithoutCountryCode}`
+            : lead.mobileWithoutCountryCode,
+
         company: lead.company,
         city: lead.city,
         state: lead.state,
         country: lead.country,
+
         leadOwner: lead.leadOwner,
-        remarks: lead.remarks,
+
+        crmStatus: lead.crmStatus,
+        crmNote: lead.crmNote,
+
+        dataSource: lead.dataSource,
+        possessionTime: lead.possessionTime,
+
+        description: lead.description,
+
         createdAt: lead.createdAt,
         updatedAt: lead.updatedAt,
       })),

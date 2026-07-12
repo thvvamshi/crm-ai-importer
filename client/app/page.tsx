@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { parseCSV } from "@/lib/csv";
-import { uploadImport, processImport } from "@/lib/imports";
+import { uploadImport, processImport , getImportStatus } from "@/lib/imports";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PageHeader from "@/components/layout/PageHeader";
@@ -23,8 +23,38 @@ export default function Home() {
 
   const [importId, setImportId] = useState("");
 
+  const [status, setStatus] = useState("");
+
+  const [progress, setProgress] = useState(0);
+
   function handleOpenUpload() {
     setIsUploadOpen(true);
+  }
+
+  async function pollImport(importId: string) {
+    const interval = setInterval(async () => {
+      try {
+        const response = await getImportStatus(importId);
+
+        const data = response.data;
+
+        setStatus(data.status);
+        setProgress(data.progress ?? 0);
+
+        if (data.status === "COMPLETED" || data.status === "FAILED") {
+          clearInterval(interval);
+
+          console.log("Processing finished.");
+
+          // Next step:
+          // Fetch imported leads
+        }
+      } catch (error) {
+        console.error(error);
+
+        clearInterval(interval);
+      }
+    }, 2000);
   }
 
   async function handleFileSelect(file: File) {
