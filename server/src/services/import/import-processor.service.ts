@@ -50,16 +50,21 @@ class ImportProcessorService {
       let processedRows = 0;
 
       for (const batch of batches) {
-        // Normalize using AI
         const normalizedLeads = await aiService.normalize(batch);
 
-        // Save normalized leads
-        await leadService.createMany(importRecord.id, normalizedLeads);
+        const validLeads = normalizedLeads.filter((lead) => !lead.skip);
 
-        // Update progress
+        const skippedCount = normalizedLeads.length - validLeads.length;
+
+        if (validLeads.length > 0) {
+          await leadService.createMany(importRecord.id, validLeads);
+        }
+
         processedRows += batch.length;
 
         importRecord.processedRows = processedRows;
+        importRecord.skippedRows += skippedCount;
+
         importRecord.progress = Math.round((processedRows / rows.length) * 100);
 
         await importRecord.save();

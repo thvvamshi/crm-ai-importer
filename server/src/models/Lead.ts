@@ -6,6 +6,12 @@ const leadSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Import",
       required: true,
+      index: true,
+    },
+
+    createdAt: {
+      type: Date,
+      default: null,
     },
 
     name: {
@@ -19,12 +25,20 @@ const leadSchema = new Schema(
       trim: true,
       lowercase: true,
       default: null,
+      index: true,
     },
 
-    phone: {
+    countryCode: {
       type: String,
       trim: true,
       default: null,
+    },
+
+    mobileWithoutCountryCode: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
     },
 
     company: {
@@ -57,7 +71,37 @@ const leadSchema = new Schema(
       default: null,
     },
 
-    remarks: {
+    crmStatus: {
+      type: String,
+      enum: ["GOOD_LEAD_FOLLOW_UP", "DID_NOT_CONNECT", "BAD_LEAD", "SALE_DONE"],
+      default: null,
+    },
+
+    crmNote: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    dataSource: {
+      type: String,
+      enum: [
+        "leads_on_demand",
+        "meridian_tower",
+        "eden_park",
+        "varah_swamy",
+        "sarjapur_plots",
+      ],
+      default: null,
+    },
+
+    possessionTime: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    description: {
       type: String,
       trim: true,
       default: null,
@@ -67,13 +111,36 @@ const leadSchema = new Schema(
     collection: "leads",
     timestamps: true,
     versionKey: false,
-    minimize: false,
-  }
+  },
 );
 
-leadSchema.index({ importId: 1 });
-leadSchema.index({ email: 1 });
-leadSchema.index({ importId: 1, email: 1 });
+/**
+ * Prevent duplicate emails within the same import.
+ */
+leadSchema.index(
+  {
+    importId: 1,
+    email: 1,
+  },
+  {
+    unique: true,
+    sparse: true,
+  },
+);
+
+/**
+ * Prevent duplicate phone numbers within the same import.
+ */
+leadSchema.index(
+  {
+    importId: 1,
+    mobileWithoutCountryCode: 1,
+  },
+  {
+    unique: true,
+    sparse: true,
+  },
+);
 
 export type LeadDocument = InferSchemaType<typeof leadSchema>;
 

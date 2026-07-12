@@ -30,6 +30,7 @@ worker.on("active", (job) => {
   logger.info(
     {
       jobId: job.id,
+      importId: job.data.importId,
     },
     "Import job started.",
   );
@@ -39,26 +40,30 @@ worker.on("completed", (job) => {
   logger.info(
     {
       jobId: job.id,
+      importId: job.data.importId,
     },
     "Import job completed.",
   );
 });
 
-worker.on("failed", (job, error) => {
+worker.on("failed", (job, err) => {
   logger.error(
     {
       jobId: job?.id,
-      error,
+      importId: job?.data?.importId,
+      err,
     },
     "Import job failed.",
   );
 });
 
-worker.on("error", (error) => {
+worker.on("error", (err) => {
   logger.error(
     {
-      error,
+      err,
     },
     "Worker error.",
   );
 });
+
+export default worker;

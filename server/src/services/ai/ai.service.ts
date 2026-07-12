@@ -1,13 +1,13 @@
+import { env } from "../../config/env.js";
 import { CsvRow } from "../csv/csv-parser.service.js";
 import { extractJson } from "../../utils/json.js";
 import {
-  aiResponseSchema,
-  NormalizedLead,
+  AiResponseSchema,
+  type AiLead,
 } from "../../validators/ai-response.schema.js";
 import { promptService } from "./prompt.service.js";
 import { GeminiService } from "./gemini.service.js";
 import { OpenRouterService } from "./openrouter.service.js";
-import { env } from "../../config/env.js";
 import type { AIProvider } from "./provider.js";
 
 class AIService {
@@ -22,7 +22,7 @@ class AIService {
         : new OpenRouterService();
   }
 
-  async normalize(rows: CsvRow[]): Promise<NormalizedLead[]> {
+  async normalize(rows: CsvRow[]): Promise<AiLead[]>  {
     const prompt = promptService.build(rows);
 
     const response = await this.provider.generate(prompt);
@@ -37,7 +37,15 @@ class AIService {
       throw new Error("AI returned invalid JSON.");
     }
 
-    return aiResponseSchema.parse(parsed);
+    const validation = AiResponseSchema.safeParse(parsed);
+
+    if (!validation.success) {
+      throw new Error(
+        `AI returned an invalid response.\n${validation.error.message}`,
+      );
+    }
+
+    return validation.data;
   }
 }
 
