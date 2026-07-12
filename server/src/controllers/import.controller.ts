@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { importService } from "../services/import/import.service.js";
 import { processImportService } from "../services/import/process-import.service.js";
 import { getImportService } from "../services/import/get-import.service.js";
+import { listImportsService } from "../services/import/list-imports.service.js";
 
 export async function createImport(req: Request, res: Response) {
   if (!req.file) {
@@ -26,10 +27,7 @@ export async function createImport(req: Request, res: Response) {
   });
 }
 
-export async function processImport(
-  req: Request,
-  res: Response
-) {
+export async function processImport(req: Request, res: Response) {
   const { id } = req.params;
 
   const result = await processImportService.execute(id);
@@ -41,13 +39,25 @@ export async function processImport(
   });
 }
 
-export async function getImport(
-  req: Request,
-  res: Response,
-) {
+export async function getImport(req: Request, res: Response) {
   const { id } = req.params;
 
   const result = await getImportService.execute(id);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
+export async function listImports(req: Request, res: Response) {
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.max(Number(req.query.limit) || 10, 1);
+
+  const result = await listImportsService.execute({
+    page,
+    limit,
+  });
 
   res.status(200).json({
     success: true,
