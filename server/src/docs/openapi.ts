@@ -164,4 +164,3 @@ export const openApiSpec = {
     },
   },
 };
-console.log(JSON.stringify(openApiSpec, null, 2));
