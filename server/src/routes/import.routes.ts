@@ -2,6 +2,15 @@ import { Router } from "express";
 
 import { upload } from "../config/multer.js";
 import { asyncHandler } from "../utils/async-handler.js";
+import { validate } from "../middlewares/validate.middleware.js";
+
+import {
+  importIdParamsSchema,
+  listImportsQuerySchema,
+  listImportLeadsParamsSchema,
+  listImportLeadsQuerySchema,
+} from "../validators/import-request.schema.js";
+
 import {
   createImport,
   processImport,
@@ -12,14 +21,36 @@ import {
 
 const router = Router();
 
+//  * POST /imports
 router.post("/", upload.single("file"), asyncHandler(createImport));
 
-router.get("/", asyncHandler(listImports));
+//  * GET /imports?page=1&limit=10
+router.get(
+  "/",
+  validate(listImportsQuerySchema, "query"),
+  asyncHandler(listImports),
+);
 
-router.get("/:id", asyncHandler(getImport));
+//  * GET /imports/:id
+router.get(
+  "/:id",
+  validate(importIdParamsSchema, "params"),
+  asyncHandler(getImport),
+);
 
-router.get("/:id/leads", asyncHandler(listImportLeads));
+//  * GET /imports/:id/leads?page=1&limit=10
+router.get(
+  "/:id/leads",
+  validate(listImportLeadsParamsSchema, "params"),
+  validate(listImportLeadsQuerySchema, "query"),
+  asyncHandler(listImportLeads),
+);
 
-router.post("/:id/process", asyncHandler(processImport));
+//  * POST /imports/:id/process
+router.post(
+  "/:id/process",
+  validate(importIdParamsSchema, "params"),
+  asyncHandler(processImport),
+);
 
 export default router;
