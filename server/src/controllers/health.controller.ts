@@ -1,12 +1,37 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 
-export const healthController = (
+import { redis } from "../config/redis.js";
+
+export const healthController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
-  res.status(200).json({
-    success: true,
-    message: "CRM AI Importer API is running",
+  const mongoConnected = mongoose.connection.readyState === 1;
+
+  let redisConnected = false;
+
+  try {
+    await redis.ping();
+    redisConnected = true;
+  } catch {
+    redisConnected = false;
+  }
+
+  const healthy = mongoConnected && redisConnected;
+
+  res.status(healthy ? 200 : 503).json({
+    success: healthy,
+    status: healthy ? "healthy" : "unhealthy",
+
+    services: {
+      api: "up",
+      mongodb: mongoConnected ? "connected" : "disconnected",
+      redis: redisConnected ? "connected" : "disconnected",
+    },
+
+    uptime: Math.floor(process.uptime()),
+
     timestamp: new Date().toISOString(),
   });
 };
