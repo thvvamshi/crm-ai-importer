@@ -21,7 +21,7 @@ export async function createImport(req: Request, res: Response) {
     mimeType: req.file.mimetype,
   });
 
-  res.status(201).json({
+  return res.status(201).json({
     success: true,
     message: "CSV uploaded successfully.",
     data: result,
@@ -29,11 +29,11 @@ export async function createImport(req: Request, res: Response) {
 }
 
 export async function processImport(req: Request, res: Response) {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const result = await processImportService.execute(id);
 
-  res.status(202).json({
+  return res.status(202).json({
     success: true,
     message: "Import has been queued for processing.",
     data: result,
@@ -41,11 +41,11 @@ export async function processImport(req: Request, res: Response) {
 }
 
 export async function getImport(req: Request, res: Response) {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const result = await getImportService.execute(id);
 
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     data: result,
   });
@@ -53,6 +53,7 @@ export async function getImport(req: Request, res: Response) {
 
 export async function listImports(req: Request, res: Response) {
   const page = Math.max(Number(req.query.page) || 1, 1);
+
   const limit = Math.max(Number(req.query.limit) || 10, 1);
 
   const result = await listImportsService.execute({
@@ -60,19 +61,17 @@ export async function listImports(req: Request, res: Response) {
     limit,
   });
 
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     data: result,
   });
 }
 
-export async function listImportLeads(
-  req: Request,
-  res: Response,
-) {
-  const { id } = req.params;
+export async function listImportLeads(req: Request, res: Response) {
+  const id = req.params.id as string;
 
   const page = Math.max(Number(req.query.page) || 1, 1);
+
   const limit = Math.max(Number(req.query.limit) || 10, 1);
 
   const result = await listImportLeadsService.execute({
@@ -81,7 +80,7 @@ export async function listImportLeads(
     limit,
   });
 
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     data: result,
   });

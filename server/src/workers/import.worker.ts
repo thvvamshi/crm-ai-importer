@@ -2,7 +2,6 @@ import { Worker } from "bullmq";
 
 import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
-import { redis } from "../config/redis.js";
 import { importProcessorService } from "../services/import/import-processor.service.js";
 
 const worker = new Worker(
@@ -19,7 +18,16 @@ const worker = new Worker(
     await importProcessorService.process(job.data.importId);
   },
   {
-    connection: redis,
+    connection:
+      env.NODE_ENV === "production" && env.REDIS_URL
+        ? {
+            url: env.REDIS_URL,
+          }
+        : {
+            host: env.REDIS_HOST,
+            port: env.REDIS_PORT,
+          },
+
     prefix: env.REDIS_PREFIX,
   },
 );

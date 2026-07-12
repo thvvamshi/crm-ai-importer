@@ -1,10 +1,18 @@
 import { Queue } from "bullmq";
 
-import { redis } from "../config/redis.js";
 import { env } from "../config/env.js";
 
 export const importQueue = new Queue("crm-import", {
-  connection: redis,
+  connection:
+    env.NODE_ENV === "production" && env.REDIS_URL
+      ? {
+          url: env.REDIS_URL,
+        }
+      : {
+          host: env.REDIS_HOST,
+          port: env.REDIS_PORT,
+        },
+
   prefix: env.REDIS_PREFIX,
 
   defaultJobOptions: {

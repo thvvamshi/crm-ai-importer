@@ -17,13 +17,16 @@ export const redis =
 redis.on("connect", () => {
   logger.info(
     {
-      mode: env.NODE_ENV === "production" && env.REDIS_URL ? "cloud" : "local",
+      mode:
+        env.NODE_ENV === "production" && env.REDIS_URL
+          ? "cloud"
+          : "local",
     },
     "Redis connected",
   );
 });
 
-redis.on("error", (error) => {
+redis.on("error", (error: Error) => {
   logger.error(
     {
       error,

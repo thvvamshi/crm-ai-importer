@@ -16,33 +16,42 @@ const app = express();
 app.use(helmet());
 
 // CORS
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    credentials: true,
+  }),
+);
 
-//  Compression
+// Compression
 app.use(compression());
 
-// HTTP Request Logger
-app.use(pinoHttp({ logger }));
+// HTTP Logger
+app.use(
+  pinoHttp({
+    logger,
+  }),
+);
 
 // Body Parsers
 app.use(express.json());
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  express.urlencoded({
+    extended: true,
+  }),
+);
 
-app.get("/api/openapi.json", (_, res) => {
-  res.json(openApiSpec);
-});
-
-// API Documentation
+// Swagger
 app.use("/api/docs", ...swaggerMiddleware);
 
 // API Routes
 app.use("/api/v1", routes);
 
-// 404 Handler
+// 404
 app.use(notFoundMiddleware);
 
-// Global Error Handler
+// Error Handler
 app.use(errorMiddleware);
 
 export default app;
