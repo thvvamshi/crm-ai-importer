@@ -5,46 +5,59 @@ export async function uploadImport(file: File) {
 
   formData.append("file", file);
 
+  const { data } = await api.post("/imports", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return data;
+}
+
+export async function processImport(importId: string) {
   const { data } = await api.post(
-    "/imports",
-    formData,
-    {
-      headers: {
-        "Content-Type":
-          "multipart/form-data",
-      },
-    }
+    `/imports/${importId}/process`,
   );
 
   return data;
 }
 
-export async function processImport(
-  importId: string
-) {
-  const { data } = await api.post(
-    `/imports/${importId}/process`
-  );
-
-  return data;
-}
-
-export async function getImportStatus(
-  importId: string
-) {
+export async function getImportStatus(importId: string) {
   const { data } = await api.get(
-    `/imports/${importId}`
+    `/imports/${importId}`,
   );
 
   return data;
 }
 
 export async function getImportLeads(
-  importId: string
+  importId: string,
+  page: number = 1,
+  limit: number = 10,
 ) {
   const { data } = await api.get(
-    `/imports/${importId}/leads`
+    `/imports/${importId}/leads`,
+    {
+      params: {
+        page,
+        limit,
+      },
+    },
   );
+
+  return data;
+}
+
+export async function listImports(
+  page: number = 1,
+  limit: number = 10,
+) {
+  const { data } = await api.get("/imports", {
+    params: {
+      page,
+      limit,
+    },
+  });
 
   return data;
 }

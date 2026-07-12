@@ -9,6 +9,7 @@ import {
   processImport,
   getImportStatus,
   getImportLeads,
+  listImports,
 } from "@/lib/imports";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -39,12 +40,23 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+
   const [leads, setLeads] = useState<Lead[]>([]);
 
+  const [currentImportId, setCurrentImportId] = useState("");
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeout on component unmount to prevent state updates on unmounted components
   useEffect(() => {
+    void loadLatestImport();
+
     return () => {
       if (pollTimeoutRef.current) {
         clearTimeout(pollTimeoutRef.current);
@@ -57,17 +69,46 @@ export default function Home() {
     setIsUploadOpen(true);
   }
 
-  async function fetchLeads(id: string) {
+  async function fetchLeads(id: string, page = 1) {
     try {
-      const response = await getImportLeads(id);
+      setCurrentImportId(id);
+
+      const response = await getImportLeads(id, page, pagination.limit);
+
       setLeads(response.data.leads);
-      toast.success(
-        `${response.data.leads.length} leads imported successfully`,
-      );
+
+      setPagination(response.data.pagination);
+
+      if (page === 1) {
+        toast.success(
+          `${response.data.pagination.total} leads imported successfully`,
+        );
+      }
+
       resetUploadState();
     } catch (error) {
       console.error(error);
       toast.error("Unable to fetch imported leads.");
+    }
+  }
+
+  function handlePageChange(page: number) {
+    void fetchLeads(currentImportId, page);
+  }
+
+  async function loadLatestImport() {
+    try {
+      const response = await listImports(1, 1);
+
+      const imports = response.data.imports;
+
+      if (!imports?.length) {
+        return;
+      }
+
+      await fetchLeads(imports[0].id, 1);
+    } catch (error) {
+      console.error(error);
     }
   }
 
@@ -89,8 +130,7 @@ export default function Home() {
 
         toast.success("Import completed successfully.");
 
-        await fetchLeads(id);
-
+        await fetchLeads(id, 1);
         return;
       }
 
@@ -199,7 +239,12 @@ export default function Home() {
       {leads.length === 0 ? (
         <EmptyLeads />
       ) : (
-        <LeadsTable leads={leads} onImportMore={handleOpenUpload} />
+        <LeadsTable
+          leads={leads}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onImportMore={handleOpenUpload}
+        />
       )}
 
       <UploadModal

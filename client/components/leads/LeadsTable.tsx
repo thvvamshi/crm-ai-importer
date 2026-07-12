@@ -17,6 +17,13 @@ interface Lead {
 interface LeadsTableProps {
   leads: Lead[];
   onImportMore: () => void;
+  onPageChange: (page: number) => void;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -49,9 +56,12 @@ function StatusBadge({ status }: { status: string | null }) {
 export default function LeadsTable({
   leads,
   onImportMore,
+  pagination,
+  onPageChange,
 }: LeadsTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
@@ -59,7 +69,7 @@ export default function LeadsTable({
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            {leads.length} lead{leads.length !== 1 ? "s" : ""} imported
+            {pagination.total} lead{pagination.total !== 1 ? "s" : ""} imported
           </p>
         </div>
 
@@ -71,6 +81,7 @@ export default function LeadsTable({
         </button>
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
@@ -111,10 +122,7 @@ export default function LeadsTable({
 
           <tbody className="divide-y divide-slate-100 bg-white">
             {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                className="transition hover:bg-slate-50"
-              >
+              <tr key={lead.id} className="transition hover:bg-slate-50">
                 <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-900">
                   {lead.name}
                 </td>
@@ -150,6 +158,49 @@ export default function LeadsTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+        <p className="text-sm font-medium text-slate-700">
+  Showing {(pagination.page - 1) * pagination.limit + 1}–
+  {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+  {pagination.total} leads
+</p>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onPageChange(pagination.page - 1)}
+            disabled={pagination.page === 1}
+            className="rounded-lg border border-slate-700 text-black px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+
+          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
+            (page) => (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`h-9 w-9 rounded-lg text-sm font-medium ${
+                  page === pagination.page
+                    ? "bg-orange-500 text-white"
+                    : "border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                {page}
+              </button>
+            ),
+          )}
+
+          <button
+            onClick={() => onPageChange(pagination.page + 1)}
+            disabled={pagination.page === pagination.totalPages}
+            className="rounded-lg border border-slate-700 px-3 text-black py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );
