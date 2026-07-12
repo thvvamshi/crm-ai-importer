@@ -9,7 +9,8 @@ const leadSchema = new Schema(
       index: true,
     },
 
-    createdAt: {
+    // Lead creation date from the imported CSV
+    leadCreatedAt: {
       type: Date,
       default: null,
     },
@@ -109,13 +110,13 @@ const leadSchema = new Schema(
   },
   {
     collection: "leads",
-    timestamps: true,
+    timestamps: true, // MongoDB document createdAt & updatedAt
     versionKey: false,
   },
 );
 
 /**
- * Prevent duplicate emails within the same import.
+ * Prevent duplicate email addresses within the same import.
  */
 leadSchema.index(
   {
@@ -125,6 +126,7 @@ leadSchema.index(
   {
     unique: true,
     sparse: true,
+    name: "uniq_import_email",
   },
 );
 
@@ -139,9 +141,10 @@ leadSchema.index(
   {
     unique: true,
     sparse: true,
+    name: "uniq_import_mobile",
   },
 );
 
 export type LeadDocument = InferSchemaType<typeof leadSchema>;
 
-export const LeadModel = model("Lead", leadSchema);
+export const LeadModel = model<LeadDocument>("Lead", leadSchema);

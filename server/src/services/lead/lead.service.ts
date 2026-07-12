@@ -9,33 +9,85 @@ class LeadService {
       return [];
     }
 
-    const documents = leads.map(({ skip, ...lead }) => ({
-      importId: new Types.ObjectId(importId),
+    const objectId = new Types.ObjectId(importId);
 
-      createdAt: lead.createdAt ? new Date(lead.createdAt) : null,
+    const operations = leads.map(({ skip, ...lead }) => {
+      const document = {
+        importId: objectId,
 
-      name: lead.name,
-      email: lead.email,
+        createdAt: lead.createdAt ? new Date(lead.createdAt) : null,
 
-      countryCode: lead.countryCode,
-      mobileWithoutCountryCode: lead.mobileWithoutCountryCode,
+        name: lead.name,
+        email: lead.email,
 
-      company: lead.company,
-      city: lead.city,
-      state: lead.state,
-      country: lead.country,
+        countryCode: lead.countryCode,
+        mobileWithoutCountryCode: lead.mobileWithoutCountryCode,
 
-      leadOwner: lead.leadOwner,
+        company: lead.company,
+        city: lead.city,
+        state: lead.state,
+        country: lead.country,
 
-      crmStatus: lead.crmStatus,
-      crmNote: lead.crmNote,
+        leadOwner: lead.leadOwner,
 
-      dataSource: lead.dataSource,
-      possessionTime: lead.possessionTime,
-      description: lead.description,
-    }));
+        crmStatus: lead.crmStatus,
+        crmNote: lead.crmNote,
 
-    return LeadModel.insertMany(documents, {
+        dataSource: lead.dataSource,
+        possessionTime: lead.possessionTime,
+        description: lead.description,
+      };
+
+      /**
+       * Primary deduplication:
+       * importId + email
+       */
+      if (lead.email) {
+        return {
+          updateOne: {
+            filter: {
+              importId: objectId,
+              email: lead.email,
+            },
+            update: {
+              $set: document,
+            },
+            upsert: true,
+          },
+        };
+      }
+
+      /**
+       * Fallback deduplication:
+       * importId + mobile number
+       */
+      if (lead.mobileWithoutCountryCode) {
+        return {
+          updateOne: {
+            filter: {
+              importId: objectId,
+              mobileWithoutCountryCode: lead.mobileWithoutCountryCode,
+            },
+            update: {
+              $set: document,
+            },
+            upsert: true,
+          },
+        };
+      }
+
+      /**
+       * No unique identifier available.
+       * Insert as a new document.
+       */
+      return {
+        insertOne: {
+          document,
+        },
+      };
+    });
+
+    return LeadModel.bulkWrite(operations, {
       ordered: false,
     });
   }
