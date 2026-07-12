@@ -1,14 +1,17 @@
 "use client";
 
 import { X } from "lucide-react";
+
 import Dropzone from "./Dropzone";
 import FilePreview from "./FilePreview";
 
 interface UploadModalProps {
   open: boolean;
-  selectedFile: File | null;
+  selectedFile: File |null;
   previewRows: Record<string, string>[];
   isProcessing: boolean;
+  status: string;
+  progress: number;
   onClose: () => void;
   onFileSelect: (file: File) => void;
   onRemove: () => void;
@@ -20,6 +23,8 @@ export default function UploadModal({
   selectedFile,
   previewRows,
   isProcessing,
+  status,
+  progress,
   onClose,
   onFileSelect,
   onRemove,
@@ -54,8 +59,43 @@ export default function UploadModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {selectedFile ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          {isProcessing ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="mb-6 h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-orange-500 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              <p className="text-lg font-semibold text-slate-900">
+                Import in Progress
+              </p>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Please keep this window open while your CSV is being processed.
+              </p>
+
+              <div className="mt-8 w-full rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-600">Status</span>
+
+                  <span className="font-semibold text-orange-600">
+                    {status || "UPLOADING"}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-600">Progress</span>
+
+                  <span className="font-semibold text-slate-900">
+                    {progress}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : selectedFile ? (
             <FilePreview
               file={selectedFile}
               rows={previewRows}
@@ -79,15 +119,15 @@ export default function UploadModal({
 
           <button
             type="button"
-            disabled={!selectedFile || isProcessing}
             onClick={onUpload}
+            disabled={!selectedFile || isProcessing}
             className={`flex-1 rounded-xl py-3 text-base font-semibold text-white transition ${
               !selectedFile || isProcessing
                 ? "cursor-not-allowed bg-orange-300"
                 : "bg-orange-500 hover:bg-orange-600"
             }`}
           >
-            {isProcessing ? "Uploading..." : "Import Leads"}
+            {isProcessing ? `Importing... ${progress}%` : "Import Leads"}
           </button>
         </div>
       </div>

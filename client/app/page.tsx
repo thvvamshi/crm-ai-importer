@@ -1,77 +1,145 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 import { parseCSV } from "@/lib/csv";
-import { uploadImport, processImport , getImportStatus } from "@/lib/imports";
+import {
+  uploadImport,
+  processImport,
+  getImportStatus,
+  getImportLeads,
+} from "@/lib/imports";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PageHeader from "@/components/layout/PageHeader";
 import UploadCard from "@/components/home/UploadCard";
 import EmptyLeads from "@/components/home/EmptyLeads";
 import UploadModal from "@/components/upload/UploadModal";
+import LeadsTable from "@/components/leads/LeadsTable";
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  city: string;
+  state: string;
+  country: string;
+  leadOwner: string;
+  crmStatus: string | null;
+  crmNote: string | null;
+}
 
 export default function Home() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const [previewRows, setPreviewRows] = useState<Record<string, string>[]>([]);
-
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const [importId, setImportId] = useState("");
-
   const [status, setStatus] = useState("");
-
   const [progress, setProgress] = useState(0);
+  const [leads, setLeads] = useState<Lead[]>([]);
+
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on component unmount to prevent state updates on unmounted components
+  useEffect(() => {
+    return () => {
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   function handleOpenUpload() {
     setIsUploadOpen(true);
   }
 
-  async function pollImport(importId: string) {
-    const interval = setInterval(async () => {
-      try {
-        const response = await getImportStatus(importId);
-
-        const data = response.data;
-
-        setStatus(data.status);
-        setProgress(data.progress ?? 0);
-
-        if (data.status === "COMPLETED" || data.status === "FAILED") {
-          clearInterval(interval);
-
-          console.log("Processing finished.");
-
-          // Next step:
-          // Fetch imported leads
-        }
-      } catch (error) {
-        console.error(error);
-
-        clearInterval(interval);
-      }
-    }, 2000);
+  async function fetchLeads(id: string) {
+    try {
+      const response = await getImportLeads(id);
+      setLeads(response.data.leads);
+      toast.success(
+        `${response.data.leads.length} leads imported successfully`,
+      );
+      resetUploadState();
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to fetch imported leads.");
+    }
   }
 
+  async function pollImport(id: string) {
+    try {
+      const response = await getImportStatus(id);
+      const data = response.data;
+
+      setStatus(data.status);
+      setProgress(data.progress ?? 0);
+
+      if (data.status === "COMPLETED") {
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
+
+        setIsProcessing(false);
+
+        toast.success("Import completed successfully.");
+
+        await fetchLeads(id);
+
+        return;
+      }
+
+      if (data.status === "FAILED") {
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
+
+        setIsProcessing(false);
+
+        toast.error("Import failed.");
+
+        return;
+      }
+
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+
+      pollTimeoutRef.current = setTimeout(() => {
+        void pollImport(id);
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
+
+      setIsProcessing(false);
+
+      toast.error("Unable to track import status.");
+    }
+  }
   async function handleFileSelect(file: File) {
     setSelectedFile(file);
-
     try {
       const rows = await parseCSV(file);
       setPreviewRows(rows);
     } catch (error) {
       console.error(error);
-      toast.error("Unable to preview the CSV file.");
+      toast.error("Unable to preview CSV.");
     }
   }
 
   function handleRemoveFile() {
     if (isProcessing) return;
-
     setSelectedFile(null);
     setPreviewRows([]);
   }
@@ -80,75 +148,67 @@ export default function Home() {
     setSelectedFile(null);
     setPreviewRows([]);
     setIsUploadOpen(false);
+    setStatus("");
+    setProgress(0);
   }
 
   async function handleUpload() {
     if (!selectedFile || isProcessing) return;
 
-    const loadingToast = toast.loading("Uploading CSV...");
+    const loading = toast.loading("Uploading CSV...");
 
     try {
       setIsProcessing(true);
 
-      // Upload CSV
-      const uploadResponse = await uploadImport(selectedFile);
+      const upload = await uploadImport(selectedFile);
+      const id = upload.data.importId;
 
-      const id = uploadResponse.data.importId;
-
-      setImportId(id);
-
-      toast.dismiss(loadingToast);
-
+      toast.dismiss(loading);
       toast.success("CSV uploaded successfully.");
 
-      // Queue processing
       await processImport(id);
+      toast.success("Import started.");
 
-      toast.success("Import queued successfully.");
-
-      console.log("Import queued:", id);
-
-      // Close modal after queueing
-      resetUploadState();
-
-      // Next:
-      // Start polling using importId
+      // Fire and forget polling with explicit void
+      void pollImport(id);
     } catch (error: any) {
       console.error(error);
-
-      toast.dismiss(loadingToast);
+      setIsProcessing(false);
+      toast.dismiss(loading);
 
       if (error?.response?.status === 409) {
         toast.warning("This CSV has already been imported.");
       } else if (error?.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error("Failed to start import.");
+        toast.error("Failed to import CSV.");
       }
-    } finally {
-      setIsProcessing(false);
     }
   }
 
   function handleCloseModal() {
     if (isProcessing) return;
-
     resetUploadState();
   }
 
   return (
     <DashboardLayout>
       <PageHeader onUploadClick={handleOpenUpload} />
-
       <UploadCard onUploadClick={handleOpenUpload} />
 
-      <EmptyLeads />
+      {leads.length === 0 ? (
+        <EmptyLeads />
+      ) : (
+        <LeadsTable leads={leads} onImportMore={handleOpenUpload} />
+      )}
 
       <UploadModal
         open={isUploadOpen}
         selectedFile={selectedFile}
         previewRows={previewRows}
         isProcessing={isProcessing}
+        status={status}
+        progress={progress}
         onClose={handleCloseModal}
         onFileSelect={handleFileSelect}
         onRemove={handleRemoveFile}
