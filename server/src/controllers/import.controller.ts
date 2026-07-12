@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { importService } from "../services/import/import.service.js";
+import { processImportService } from "../services/import/process-import.service.js";
 
 export async function createImport(req: Request, res: Response) {
   if (!req.file) {
@@ -20,6 +21,21 @@ export async function createImport(req: Request, res: Response) {
   res.status(201).json({
     success: true,
     message: "CSV uploaded successfully.",
+    data: result,
+  });
+}
+
+export async function processImport(
+  req: Request,
+  res: Response
+) {
+  const { id } = req.params;
+
+  const result = await processImportService.execute(id);
+
+  res.status(202).json({
+    success: true,
+    message: "Import has been queued for processing.",
     data: result,
   });
 }
